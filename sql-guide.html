@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL Guide · P2P Spend Intelligence</title>
+<style>
+:root{
+  --navy:#0B1F3A;--navy2:#13294B;--teal:#1F8A80;--teal-br:#2DD4BF;--teal-l:#E6F5F4;
+  --amber:#D97706;--amber-l:#FEF3C7;--green:#16A34A;--green-l:#DCFCE7;--red:#DC2626;
+  --slate:#475569;--muted:#94A3B8;--bg:#F3F6FB;--surface:#FFFFFF;--border:#E2E8F0;--ink:#0F172A;
+  --code-bg:#0E1C33;--code-fg:#D7E3F4;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.68;font-size:15px;padding-bottom:env(safe-area-inset-bottom,0)}
+nav{position:sticky;top:0;z-index:100;background:var(--navy);border-bottom:2px solid var(--teal);
+  padding:0 20px;display:flex;gap:4px;align-items:center;overflow-x:auto;padding-top:env(safe-area-inset-top,0)}
+nav .brand{color:#fff;font-weight:800;font-size:13px;margin-right:14px;white-space:nowrap}
+nav a{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+  padding:14px 11px;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent}
+nav a:hover,nav a.active{color:#fff;border-bottom-color:var(--teal)}
+.layout{max-width:1060px;margin:0 auto;display:grid;grid-template-columns:200px 1fr;gap:28px;padding:26px 22px 90px}
+.toc{position:sticky;top:64px;align-self:start;font-size:12.5px;max-height:calc(100vh - 90px);overflow:auto}
+.toc a{display:block;color:var(--slate);text-decoration:none;padding:4px 0;border-left:2px solid transparent;padding-left:10px}
+.toc a:hover{color:var(--teal);border-left-color:var(--teal)}
+.toc .lvl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:12px 0 4px}
+.hero{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:16px;padding:28px 32px;margin-bottom:26px;color:#fff}
+.hero .kick{color:var(--teal-br);font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase}
+.hero h1{font-size:26px;font-weight:800;margin:7px 0 8px}
+.hero p{color:#CBD5E1;font-size:14.5px;max-width:66ch}
+h2{font-size:20px;font-weight:800;color:var(--navy);margin:38px 0 6px;scroll-margin-top:70px}
+h2 .b{font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;vertical-align:middle;margin-left:8px}
+.b-beg{background:var(--green-l);color:var(--green)}.b-int{background:var(--amber-l);color:var(--amber)}.b-adv{background:#FEE2E2;color:var(--red)}
+h3{font-size:15px;font-weight:800;color:var(--navy);margin:20px 0 6px}
+p{margin:9px 0}
+pre{background:var(--code-bg);color:var(--code-fg);padding:15px 17px;border-radius:10px;overflow-x:auto;
+  font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;line-height:1.6;margin:11px 0}
+pre .k{color:#7DD3FC}pre .f{color:#FCD34D}pre .s{color:#86EFAC}pre .c{color:#64748B}pre .n{color:#F0ABFC}
+code{background:#E6EDF6;color:#13294B;padding:2px 6px;border-radius:5px;font-size:13px;font-family:'SF Mono',Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
+th{background:var(--navy);color:#fff;padding:7px 11px;text-align:left;font-size:11.5px}
+td{padding:6px 11px;border-bottom:1px solid var(--border)}
+tr:nth-child(even) td{background:#F8FAFC}
+.out{border-left:3px solid var(--teal);background:var(--teal-l);border-radius:0 8px 8px 0;padding:4px 14px;margin:10px 0}
+.out .lbl{font-size:10px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+.note{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:10px 14px;margin:11px 0;font-size:13.5px}
+.try{background:#EEF6FF;border-left:4px solid #2563EB;border-radius:8px;padding:10px 14px;margin:11px 0;font-size:13.5px}
+.try b{color:#1D4ED8}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:14px 0}
+.foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+a.inline{color:var(--teal);font-weight:600;text-decoration:none}a.inline:hover{text-decoration:underline}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.toc{display:none}}
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">P2P Spend Intelligence</span>
+  <a href="index.html">Walkthrough</a>
+  <a href="sql-guide.html" class="active">SQL Guide</a>
+  <a href="dashboard.html">Dashboard</a>
+</nav>
+<div class="layout">
+  <aside class="toc">
+    <div class="lvl">Beginner</div>
+    <a href="#what">0 · What is SQL?</a>
+    <a href="#select">1 · SELECT / FROM / WHERE</a>
+    <a href="#order">2 · ORDER BY / LIMIT</a>
+    <a href="#agg">3 · GROUP BY &amp; aggregates</a>
+    <div class="lvl">Intermediate</div>
+    <a href="#join">4 · JOINs</a>
+    <a href="#case">5 · CASE logic</a>
+    <a href="#having">6 · HAVING</a>
+    <a href="#cte">7 · CTEs (WITH)</a>
+    <div class="lvl">Advanced</div>
+    <a href="#window">8 · Window functions</a>
+    <a href="#views">9 · Views / marts</a>
+    <a href="#capstone">10 · Capstone: 3-way match</a>
+    <a href="#practice">11 · Practice set</a>
+  </aside>
+
+  <main>
+  <div class="hero">
+    <div class="kick">Zero to analytical SQL</div>
+    <h1>SQL, taught on real procurement data</h1>
+    <p>Every example runs against this project's tables. By the end you'll have built the three-way-match
+       reconciliation yourself. No prior SQL assumed. Use DuckDB (<code>pip install duckdb</code>) to run
+       everything locally in seconds.</p>
+  </div>
+
+  <h2 id="what">0 · What is SQL, a database, a table?<span class="b b-beg">beginner</span></h2>
+  <p>A <b>database</b> is a set of <b>tables</b>. A table is a grid: <b>columns</b> (fields, e.g.
+     <code>supplier_name</code>) and <b>rows</b> (records, e.g. one supplier). <b>SQL</b> (Structured Query
+     Language) is how you ask questions of those tables.</p>
+  <p>This project has 10 tables. The one we'll use most is <code>fact_invoice_line</code> — one row per
+     invoice line. A simplified peek:</p>
+  <table>
+    <tr><th>invoice_number</th><th>supplier_key</th><th>item_key</th><th>quantity_invoiced</th><th>total_amount</th></tr>
+    <tr><td>INV-50001</td><td>88</td><td>412</td><td>12</td><td>1,840.00</td></tr>
+    <tr><td>INV-50002</td><td>203</td><td>77</td><td>3</td><td>9,210.50</td></tr>
+  </table>
+  <div class="note"><b>Mental model:</b> a query always answers "from <i>which table</i>, give me
+     <i>which columns</i>, for <i>which rows</i>, in <i>what shape</i>."</div>
+
+  <h2 id="select">1 · Reading data — SELECT / FROM / WHERE<span class="b b-beg">beginner</span></h2>
+  <p><code>SELECT</code> picks columns, <code>FROM</code> picks the table, <code>WHERE</code> filters rows.</p>
+  <pre><span class="k">SELECT</span> supplier_name, country, payment_terms_days
+<span class="k">FROM</span>   dim_supplier
+<span class="k">WHERE</span>  country = <span class="s">'India'</span>;</pre>
+  <p>"Give me the name, country and terms, from the supplier table, for suppliers in India."
+     Use <code>SELECT *</code> to get every column. Filters combine with <code>AND</code> / <code>OR</code>:</p>
+  <pre><span class="k">SELECT</span> * <span class="k">FROM</span> dim_supplier
+<span class="k">WHERE</span>  risk_rating = <span class="s">'High'</span> <span class="k">AND</span> is_preferred = <span class="k">TRUE</span>;</pre>
+  <div class="try"><b>Try it:</b> list all suppliers with <code>onboarding_status = 'Pending Docs'</code> — these
+     are the onboarding follow-ups (straight from the United JD).</div>
+
+  <h2 id="order">2 · Sorting &amp; limiting — ORDER BY / LIMIT<span class="b b-beg">beginner</span></h2>
+  <pre><span class="k">SELECT</span> supplier_name, payment_terms_days
+<span class="k">FROM</span>   dim_supplier
+<span class="k">ORDER BY</span> payment_terms_days <span class="k">DESC</span>   <span class="c">-- biggest first</span>
+<span class="k">LIMIT</span>  <span class="n">5</span>;                          <span class="c">-- just the top 5</span></pre>
+  <p><code>DESC</code> = descending, <code>ASC</code> (default) = ascending. <code>LIMIT</code> caps the rows —
+     essential when a table has thousands.</p>
+
+  <h2 id="agg">3 · Summarising — GROUP BY &amp; aggregates<span class="b b-beg">beginner</span></h2>
+  <p>Aggregate functions crush many rows into one number: <code>COUNT</code>, <code>SUM</code>,
+     <code>AVG</code>, <code>MIN</code>, <code>MAX</code>. <code>GROUP BY</code> does it per category.</p>
+  <pre><span class="c">-- total spend per supplier country</span>
+<span class="k">SELECT</span> country, <span class="f">COUNT</span>(*) <span class="k">AS</span> suppliers, <span class="f">AVG</span>(payment_terms_days) <span class="k">AS</span> avg_terms
+<span class="k">FROM</span>   dim_supplier
+<span class="k">GROUP BY</span> country
+<span class="k">ORDER BY</span> suppliers <span class="k">DESC</span>;</pre>
+  <div class="note"><b>The golden rule:</b> every column in <code>SELECT</code> must be either <i>inside</i> an
+     aggregate, or <i>listed</i> in <code>GROUP BY</code>. Forgetting this is the #1 beginner error.</div>
+  <div class="out"><span class="lbl">Output shape</span>
+    <table><tr><th>country</th><th>suppliers</th><th>avg_terms</th></tr>
+      <tr><td>USA</td><td>62</td><td>33.8</td></tr><tr><td>India</td><td>58</td><td>31.2</td></tr></table>
+  </div>
+
+  <h2 id="join">4 · Combining tables — JOINs<span class="b b-int">intermediate</span></h2>
+  <p>Facts store <i>keys</i>, not names (<code>supplier_key = 88</code>, not "Taylor LLC"). A <b>JOIN</b> stitches
+     the fact to its dimension on that key.</p>
+  <pre><span class="c">-- spend by supplier NAME: join the invoice fact to the supplier dim</span>
+<span class="k">SELECT</span> s.supplier_name, <span class="f">SUM</span>(i.line_amount) <span class="k">AS</span> spend
+<span class="k">FROM</span>       fact_invoice_line i
+<span class="k">JOIN</span>       dim_supplier      s  <span class="k">ON</span> s.supplier_key = i.supplier_key
+<span class="k">GROUP BY</span>   s.supplier_name
+<span class="k">ORDER BY</span>   spend <span class="k">DESC</span> <span class="k">LIMIT</span> <span class="n">10</span>;</pre>
+  <p>Table <b>aliases</b> (<code>i</code>, <code>s</code>) keep it short. <code>i.supplier_key</code> means
+     "the <code>supplier_key</code> column from the invoice table."</p>
+  <h3>INNER vs LEFT join — the difference that matters for reconciliation</h3>
+  <ul>
+    <li><b>INNER JOIN</b> keeps only rows that match in <i>both</i> tables.</li>
+    <li><b>LEFT JOIN</b> keeps <i>all</i> rows from the left table, filling <code>NULL</code> where the right
+        has no match.</li>
+  </ul>
+  <div class="note"><b>Why it's the whole game:</b> to find invoices with <b>no goods receipt</b>, you
+     <code>LEFT JOIN</code> PO lines to receipts and keep the rows where the receipt side is
+     <code>NULL</code>. An <code>INNER JOIN</code> would silently hide exactly the problem you're hunting.</div>
+  <pre><span class="c">-- PO lines that were never received (the NO_RECEIPT exception)</span>
+<span class="k">SELECT</span> p.po_number, p.po_line_num
+<span class="k">FROM</span>      fact_po_line       p
+<span class="k">LEFT JOIN</span> fact_goods_receipt g <span class="k">ON</span> g.po_number = p.po_number
+                                <span class="k">AND</span> g.po_line_num = p.po_line_num
+<span class="k">WHERE</span> g.gr_number <span class="k">IS NULL</span>;      <span class="c">-- no match on the right side</span></pre>
+
+  <h2 id="case">5 · Conditional logic — CASE<span class="b b-int">intermediate</span></h2>
+  <p><code>CASE</code> is SQL's if/else. It turns raw values into business categories — the basis of the match
+     verdict.</p>
+  <pre><span class="k">SELECT</span> invoice_number,
+   <span class="k">CASE WHEN</span> total_amount &gt; <span class="n">2500</span> <span class="k">THEN</span> <span class="s">'Over P-card limit'</span>
+        <span class="k">WHEN</span> total_amount &gt; <span class="n">1000</span> <span class="k">THEN</span> <span class="s">'Review'</span>
+        <span class="k">ELSE</span> <span class="s">'OK'</span> <span class="k">END</span> <span class="k">AS</span> flag
+<span class="k">FROM</span> fact_invoice_line;</pre>
+  <p>Combine <code>CASE</code> with <code>SUM</code> for "conditional totals" — count/total only rows meeting a
+     condition:</p>
+  <pre><span class="c">-- P-card spend as a share of total, in one query</span>
+<span class="k">SELECT</span> <span class="f">SUM</span>(<span class="k">CASE WHEN</span> pm.is_pcard <span class="k">THEN</span> i.total_amount <span class="k">ELSE</span> <span class="n">0</span> <span class="k">END</span>) <span class="k">AS</span> pcard_spend,
+       <span class="f">SUM</span>(i.total_amount) <span class="k">AS</span> total_spend
+<span class="k">FROM</span> fact_invoice_line i
+<span class="k">JOIN</span> dim_payment_method pm <span class="k">ON</span> pm.payment_method_key = i.payment_method_key;</pre>
+
+  <h2 id="having">6 · Filtering groups — HAVING<span class="b b-int">intermediate</span></h2>
+  <p><code>WHERE</code> filters <i>rows</i> (before grouping). <code>HAVING</code> filters <i>groups</i>
+     (after). You can't put an aggregate in <code>WHERE</code> — that's what <code>HAVING</code> is for.</p>
+  <pre><span class="c">-- suppliers we've paid more than $1M in total</span>
+<span class="k">SELECT</span> s.supplier_name, <span class="f">SUM</span>(i.line_amount) <span class="k">AS</span> spend
+<span class="k">FROM</span> fact_invoice_line i <span class="k">JOIN</span> dim_supplier s <span class="k">ON</span> s.supplier_key=i.supplier_key
+<span class="k">GROUP BY</span> s.supplier_name
+<span class="k">HAVING</span> <span class="f">SUM</span>(i.line_amount) &gt; <span class="n">1000000</span>;   <span class="c">-- filter on the aggregate</span></pre>
+  <p>This is exactly how duplicate detection works: group by supplier + amount, then
+     <code>HAVING COUNT(*) &gt; 1</code>.</p>
+
+  <h2 id="cte">7 · Breaking it up — CTEs (WITH)<span class="b b-int">intermediate</span></h2>
+  <p>A <b>CTE</b> (Common Table Expression) is a named, temporary result you build first and reuse — like a
+     variable for a query. It turns one unreadable nested mess into readable steps.</p>
+  <pre><span class="k">WITH</span> supplier_spend <span class="k">AS</span> (          <span class="c">-- step 1: compute per-supplier spend</span>
+   <span class="k">SELECT</span> supplier_key, <span class="f">SUM</span>(line_amount) <span class="k">AS</span> spend
+   <span class="k">FROM</span> fact_invoice_line <span class="k">GROUP BY</span> supplier_key)
+<span class="k">SELECT</span> s.supplier_name, ss.spend          <span class="c">-- step 2: use it</span>
+<span class="k">FROM</span> supplier_spend ss
+<span class="k">JOIN</span> dim_supplier s <span class="k">ON</span> s.supplier_key = ss.supplier_key
+<span class="k">WHERE</span> ss.spend &gt; <span class="n">500000</span>
+<span class="k">ORDER BY</span> ss.spend <span class="k">DESC</span>;</pre>
+  <div class="note">You can chain several CTEs (<code>WITH a AS (…), b AS (…)</code>). Every analysis in this
+     project uses them — they're how you keep complex SQL maintainable.</div>
+
+  <h2 id="window">8 · The power tool — window functions<span class="b b-adv">advanced</span></h2>
+  <p>Aggregates collapse rows. <b>Window functions</b> compute across a set of rows <i>without</i> collapsing
+     them — so you keep every row <i>and</i> get a total, rank, or running sum beside it. The magic word is
+     <code>OVER()</code>.</p>
+  <h3>Ranking</h3>
+  <pre><span class="k">SELECT</span> supplier_name, spend,
+   <span class="f">RANK</span>() <span class="k">OVER</span> (<span class="k">ORDER BY</span> spend <span class="k">DESC</span>) <span class="k">AS</span> rnk
+<span class="k">FROM</span> (<span class="k">SELECT</span> s.supplier_name, <span class="f">SUM</span>(i.line_amount) spend
+      <span class="k">FROM</span> fact_invoice_line i <span class="k">JOIN</span> dim_supplier s <span class="k">ON</span> s.supplier_key=i.supplier_key
+      <span class="k">GROUP BY</span> s.supplier_name) t;</pre>
+  <h3>Running / cumulative total (the Pareto trick)</h3>
+  <pre><span class="k">SELECT</span> category, spend,
+   <span class="f">ROUND</span>(<span class="n">100.0</span> * <span class="f">SUM</span>(spend) <span class="k">OVER</span> (<span class="k">ORDER BY</span> spend <span class="k">DESC</span>)
+              / <span class="f">SUM</span>(spend) <span class="k">OVER</span> (), <span class="n">1</span>) <span class="k">AS</span> cumulative_pct
+<span class="k">FROM</span> (<span class="k">SELECT</span> category, <span class="f">SUM</span>(line_amount) spend <span class="k">FROM</span> v_spend <span class="k">GROUP BY</span> category) c;</pre>
+  <p>Two windows at once: <code>SUM() OVER (ORDER BY …)</code> is the running total; <code>SUM() OVER ()</code>
+     (empty) is the grand total. Divide them → cumulative share. That's the 80/20 curve on the dashboard.</p>
+  <h3>PARTITION BY — "restart the window per group"</h3>
+  <pre><span class="c">-- each supplier's biggest single invoice line, kept alongside every line</span>
+<span class="k">SELECT</span> supplier_key, invoice_number, line_amount,
+   <span class="f">MAX</span>(line_amount) <span class="k">OVER</span> (<span class="k">PARTITION BY</span> supplier_key) <span class="k">AS</span> supplier_max
+<span class="k">FROM</span> fact_invoice_line;</pre>
+  <div class="note"><b>When to reach for a window:</b> any time the question has the word "each", "running",
+     "rank", "top-N per", "share of total", or "compared to the group".</div>
+
+  <h2 id="views">9 · Saving logic — VIEWS<span class="b b-adv">advanced</span></h2>
+  <p>A <b>view</b> is a saved query you can treat like a table. Build the hard logic once, query it forever.
+     This project saves two: <code>v_three_way_match</code> and <code>v_spend</code>.</p>
+  <pre><span class="k">CREATE VIEW</span> v_spend <span class="k">AS</span>
+<span class="k">SELECT</span> i.invoice_number, s.supplier_name, it.category, i.line_amount, pm.is_pcard
+<span class="k">FROM</span> fact_invoice_line i
+<span class="k">JOIN</span> dim_supplier s <span class="k">ON</span> s.supplier_key=i.supplier_key
+<span class="k">JOIN</span> dim_item     it <span class="k">ON</span> it.item_key=i.item_key
+<span class="k">JOIN</span> dim_payment_method pm <span class="k">ON</span> pm.payment_method_key=i.payment_method_key;
+
+<span class="c">-- now spend analysis is a one-liner:</span>
+<span class="k">SELECT</span> category, <span class="f">SUM</span>(line_amount) <span class="k">FROM</span> v_spend <span class="k">GROUP BY</span> category;</pre>
+
+  <h2 id="capstone">10 · Capstone — build the three-way match<span class="b b-adv">advanced</span></h2>
+  <p>You now have every piece: LEFT JOIN (to keep unmatched rows), CTE (to roll up receipts), CASE (the
+     verdict), aggregates. Assemble them and you've written the control this whole project is built on:</p>
+  <pre><span class="k">WITH</span> gr <span class="k">AS</span> (
+   <span class="k">SELECT</span> po_number, po_line_num, <span class="f">SUM</span>(quantity_received) <span class="k">AS</span> qty_received
+   <span class="k">FROM</span> fact_goods_receipt <span class="k">GROUP BY</span> po_number, po_line_num)
+<span class="k">SELECT</span> p.po_number, i.invoice_number,
+   <span class="k">CASE WHEN</span> i.invoice_number <span class="k">IS NULL</span>              <span class="k">THEN</span> <span class="s">'NO_INVOICE'</span>
+        <span class="k">WHEN</span> gr.qty_received  <span class="k">IS NULL</span>              <span class="k">THEN</span> <span class="s">'NO_RECEIPT'</span>
+        <span class="k">WHEN</span> i.quantity_invoiced &gt; gr.qty_received <span class="k">THEN</span> <span class="s">'QTY_OVERBILL'</span>
+        <span class="k">WHEN</span> <span class="f">ABS</span>(i.unit_price_invoiced - p.unit_price) &gt; p.unit_price*<span class="n">0.02</span>
+                                                 <span class="k">THEN</span> <span class="s">'PRICE_MISMATCH'</span>
+        <span class="k">ELSE</span> <span class="s">'MATCHED'</span> <span class="k">END</span> <span class="k">AS</span> match_status
+<span class="k">FROM</span>      fact_po_line       p
+<span class="k">LEFT JOIN</span> gr                 <span class="k">ON</span> gr.po_number=p.po_number <span class="k">AND</span> gr.po_line_num=p.po_line_num
+<span class="k">LEFT JOIN</span> fact_invoice_line  i <span class="k">ON</span> i.po_number=p.po_number <span class="k">AND</span> i.po_line_num=p.po_line_num;</pre>
+  <div class="out"><span class="lbl">You just built this</span>
+    <table><tr><th>match_status</th><th>lines</th></tr>
+      <tr><td>MATCHED</td><td>11,657</td></tr><tr><td>PRICE_MISMATCH</td><td>1,590</td></tr>
+      <tr><td>NO_RECEIPT</td><td>1,220</td></tr><tr><td>QTY_OVERBILL</td><td>833</td></tr></table>
+  </div>
+
+  <h2 id="practice">11 · Practice set<span class="b b-int">do these</span></h2>
+  <div class="card">
+    <ol style="margin-left:18px">
+      <li><b>Beginner:</b> How many suppliers are <code>High</code> risk? <span style="color:var(--muted)">(COUNT + WHERE)</span></li>
+      <li><b>Beginner:</b> Total invoiced <code>total_amount</code> for fiscal year <code>FY2025</code>. <span style="color:var(--muted)">(JOIN dim_date, SUM)</span></li>
+      <li><b>Intermediate:</b> Top 5 categories by spend. <span style="color:var(--muted)">(JOIN, GROUP BY, ORDER BY, LIMIT)</span></li>
+      <li><b>Intermediate:</b> Suppliers billed on 2+ invoices for the same amount. <span style="color:var(--muted)">(GROUP BY + HAVING)</span></li>
+      <li><b>Advanced:</b> For each department, its single largest invoice line. <span style="color:var(--muted)">(window: ROW_NUMBER OVER PARTITION BY)</span></li>
+      <li><b>Advanced:</b> Monthly spend with a running year-to-date total. <span style="color:var(--muted)">(SUM OVER ORDER BY month)</span></li>
+    </ol>
+    <p style="font-size:13px;color:var(--slate)">Answers are all variations of the queries in
+      <code>sql/03_analysis.sql</code> — compare yours against it.</p>
+  </div>
+
+  <div class="foot">
+    Next: see every query running on live data in the <a class="inline" href="dashboard.html">dashboard</a>,
+    or the full architecture in the <a class="inline" href="index.html">walkthrough</a>.
+  </div>
+  </main>
+</div>
+</body>
+</html>

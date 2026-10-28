@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>P2P Spend Intelligence · Dashboard</title>
+<style>
+:root{
+  --navy:#0B1F3A; --navy2:#13294B; --teal:#1F8A80; --teal-br:#2DD4BF; --teal-l:#E6F5F4;
+  --amber:#D97706; --amber-l:#FEF3C7; --red:#DC2626; --red-l:#FEE2E2;
+  --green:#16A34A; --green-l:#DCFCE7; --slate:#475569; --muted:#94A3B8;
+  --bg:#F3F6FB; --surface:#FFFFFF; --border:#E2E8F0; --ink:#0F172A;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.6;font-size:15px;
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+nav{position:sticky;top:0;z-index:100;background:var(--navy);border-bottom:2px solid var(--teal);
+  padding:0 20px;display:flex;gap:4px;align-items:center;overflow-x:auto;
+  padding-top:env(safe-area-inset-top,0px)}
+nav .brand{color:#fff;font-weight:800;font-size:13px;margin-right:16px;white-space:nowrap}
+nav a{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+  padding:14px 12px;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent}
+nav a:hover,nav a.active{color:#fff;border-bottom-color:var(--teal)}
+.wrap{max-width:1140px;margin:0 auto;padding:28px 20px 80px}
+/* hero */
+.hero{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:16px;
+  padding:26px 30px;margin-bottom:22px;color:#fff}
+.hero .kick{color:var(--teal-br);font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase}
+.hero h1{font-size:23px;font-weight:800;margin:6px 0 4px}
+.hero p{color:var(--muted);font-size:13.5px;max-width:70ch}
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px}
+.kpi{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px}
+.kpi .v{font-size:24px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.kpi .l{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35}
+.kpi.risk .v{color:#FCA5A5}
+.kpi.good .v{color:var(--teal-br)}
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;
+  box-shadow:0 1px 2px rgba(11,31,58,.04)}
+.card h3{font-size:14px;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:8px}
+.card .sub{font-size:12px;color:var(--slate);margin:2px 0 14px}
+.card .q{font-size:10px;font-weight:700;color:var(--teal);background:var(--teal-l);
+  padding:2px 7px;border-radius:10px;margin-left:auto}
+.col-4{grid-column:span 4}.col-5{grid-column:span 5}.col-6{grid-column:span 6}
+.col-7{grid-column:span 7}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+@media(max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}
+  .grid>*{grid-column:1/-1 !important}}
+/* svg chart bits */
+.legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:12px;font-size:12px;color:var(--slate)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
+.hl{font-weight:800;color:var(--navy)}
+.foot{margin-top:28px;font-size:12px;color:var(--muted);text-align:center}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px}
+.pill-r{background:var(--red-l);color:var(--red)}.pill-a{background:var(--amber-l);color:var(--amber)}
+.pill-g{background:var(--green-l);color:var(--green)}
+.statbig{display:flex;gap:20px;align-items:baseline;margin:6px 0 2px}
+.statbig b{font-size:30px;font-weight:800;color:var(--navy);letter-spacing:-1px}
+.statbig .s{font-size:12px;color:var(--slate)}
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">P2P Spend Intelligence</span>
+  <a href="index.html">Walkthrough</a>
+  <a href="sql-guide.html">SQL Guide</a>
+  <a href="dashboard.html" class="active">Dashboard</a>
+</nav>
+<div class="wrap">
+  <div class="hero">
+    <div class="kick">Procure-to-Pay · Spend & Reconciliation</div>
+    <h1>Spend Intelligence Dashboard</h1>
+    <p>Every number below is computed by the SQL in <code>sql/03_analysis.sql</code> against a synthetic
+       but realistically-flawed dataset. Charts are hand-built SVG — no libraries, fully offline.</p>
+    <div class="kpis" id="kpis"></div>
+  </div>
+  <div class="grid">
+    <div class="card col-5">
+      <h3>Three-way match scorecard <span class="q">Q1</span></h3>
+      <div class="sub">PO ↔ Goods Receipt ↔ Invoice, line by line</div>
+      <div id="donut"></div>
+    </div>
+    <div class="card col-7">
+      <h3>Spend Pareto by category <span class="q">Q2</span></h3>
+      <div class="sub">Bars = spend · line = cumulative share (the 80/20 view)</div>
+      <div id="pareto"></div>
+    </div>
+    <div class="card col-7">
+      <h3>Monthly spend trend</h3>
+      <div class="sub">Invoiced line value by month, 2024–2025</div>
+      <div id="trend"></div>
+    </div>
+    <div class="card col-5">
+      <h3>On-catalog vs maverick <span class="q">Q4</span></h3>
+      <div class="sub">Off-catalog buying = price leakage risk</div>
+      <div id="maverick"></div>
+    </div>
+    <div class="card col-5">
+      <h3>P-card program <span class="q">Q6·Q7</span></h3>
+      <div class="sub">Small-dollar, high-volume — the control gap</div>
+      <div id="pcard"></div>
+    </div>
+    <div class="card col-7">
+      <h3>Days Payable Outstanding vs terms <span class="q">Q9</span></h3>
+      <div class="sub">Are we paying on time? Agreed NET terms vs actual DPO</div>
+      <div id="dpo"></div>
+    </div>
+    <div class="card col-7">
+      <h3>Top suppliers by spend <span class="q">Q3</span></h3>
+      <div class="sub">Supplier concentration</div>
+      <div id="suppliers"></div>
+    </div>
+    <div class="card col-5">
+      <h3>Money at risk flagged</h3>
+      <div class="sub">What the controls caught</div>
+      <div id="risk"></div>
+    </div>
+  </div>
+  <div class="foot">Synthetic data · built with PostgreSQL/DuckDB + Python · MIT licensed</div>
+</div>
+
+<script>
+const DATA = {"head":{"total_spend":240064957.0,"po_lines":15000,"suppliers":400,"invoices":15300,"match_rate_pct":76.2,"exception_lines":3643,"recon_exposure":4080022,"dup_count":288,"dup_at_risk":4904994,"maverick_spend":51328743,"maverick_pct":21.4,"pcard_violations":106,"pcard_pct":0.87,"total_at_risk":8985016,"pcard_txn_pct":11.7,"pcard_txns":1796},"match":[{"match_status":"MATCHED","lines":11657,"exposure":0.0},{"match_status":"PRICE_MISMATCH","lines":1590,"exposure":3615742.0},{"match_status":"NO_RECEIPT","lines":1220,"exposure":256180.0},{"match_status":"QTY_OVERBILL","lines":833,"exposure":208100.0}],"category":[{"category":"Packaging & Supplies","spend":42771417.0,"pct":17.8,"cum_pct":17.8},{"category":"Travel & Expense","spend":39296001.0,"pct":16.4,"cum_pct":34.2},{"category":"Marketing","spend":37820614.0,"pct":15.8,"cum_pct":49.9},{"category":"IT & Software","spend":31293348.0,"pct":13.0,"cum_pct":63.0},{"category":"Professional Svcs","spend":30662002.0,"pct":12.8,"cum_pct":75.7},{"category":"Logistics","spend":29864518.0,"pct":12.4,"cum_pct":88.2},{"category":"Facilities & MRO","spend":28357058.0,"pct":11.8,"cum_pct":100.0}],"top_suppliers":[{"supplier_name":"Williams Inc","spend":1525672.0},{"supplier_name":"Perry-Soto","spend":1334488.0},{"supplier_name":"Carpenter, Johnston and Griffin","spend":1309192.0},{"supplier_name":"Hughes, Brooks and Burgess","spend":1300528.0},{"supplier_name":"Fowler-Moody","spend":1290923.0},{"supplier_name":"Williams-Graham","spend":1255216.0},{"supplier_name":"Martin-Stevens","spend":1244545.0},{"supplier_name":"Sampson, Key and Chambers","spend":1220508.0},{"supplier_name":"Marshall, Dominguez and Welch","spend":1208638.0},{"supplier_name":"David PLC","spend":1178241.0}],"maverick":[{"channel":"On-catalog","spend":188736214.0,"pct":78.6},{"channel":"Maverick","spend":51328743.0,"pct":21.4}],"pcard_trend":[{"period":"FY2023 Q4","pcard":200839.0,"total":23670839.0,"pct":0.8},{"period":"FY2024 Q1","pcard":307158.0,"total":38168598.0,"pct":0.8},{"period":"FY2024 Q2","pcard":248665.0,"total":31770255.0,"pct":0.8},{"period":"FY2024 Q3","pcard":304193.0,"total":37511897.0,"pct":0.8},{"period":"FY2024 Q4","pcard":266926.0,"total":33201236.0,"pct":0.8},{"period":"FY2025 Q1","pcard":302923.0,"total":33814115.0,"pct":0.9},{"period":"FY2025 Q2","pcard":352768.0,"total":36027771.0,"pct":1.0},{"period":"FY2025 Q3","pcard":278348.0,"total":25525963.0,"pct":1.1}],"dpo":[{"agreed_terms":15,"payments":595,"avg_dpo":19.9,"pct_late":26.6},{"agreed_terms":30,"payments":2172,"avg_dpo":36.2,"pct_late":26.2},{"agreed_terms":45,"payments":781,"avg_dpo":51.0,"pct_late":25.1},{"agreed_terms":60,"payments":858,"avg_dpo":64.4,"pct_late":26.8}],"spend_trend":[{"ym":"2024-01","spend":2508926.0},{"ym":"2024-02","spend":8428573.0},{"ym":"2024-03","spend":10890562.0},{"ym":"2024-04","spend":11744548.0},{"ym":"2024-05","spend":11960559.0},{"ym":"2024-06","spend":11601122.0},{"ym":"2024-07","spend":10285608.0},{"ym":"2024-08","spend":8309122.0},{"ym":"2024-09","spend":10795829.0},{"ym":"2024-10","spend":11901131.0},{"ym":"2024-11","spend":11704614.0},{"ym":"2024-12","spend":11158764.0},{"ym":"2025-01","spend":10967422.0},{"ym":"2025-02","spend":8892562.0},{"ym":"2025-03","spend":10963185.0},{"ym":"2025-04","spend":9768154.0},{"ym":"2025-05","spend":11088959.0},{"ym":"2025-06","spend":10429720.0},{"ym":"2025-07","spend":11194570.0},{"ym":"2025-08","spend":10841732.0},{"ym":"2025-09","spend":11141163.0},{"ym":"2025-10","spend":9943101.0},{"ym":"2025-11","spend":8513414.0},{"ym":"2025-12","spend":5031617.0}]};
+const C = {navy:'#0B1F3A',teal:'#1F8A80',tealBr:'#2DD4BF',amber:'#D97706',red:'#DC2626',
+  green:'#16A34A',slate:'#64748B',muted:'#94A3B8',border:'#E2E8F0'};
+const $ = id => document.getElementById(id);
+const money = n => '$'+Math.round(n).toLocaleString();
+const moneyM = n => '$'+(n/1e6).toFixed(n>=1e7?0:1)+'M';
+const svg = (w,h,inner,extra='') => `<svg viewBox="0 0 ${w} ${h}" width="100%" ${extra}
+  preserveAspectRatio="xMidYMid meet" style="display:block">${inner}</svg>`;
+
+/* ---------- KPIs ---------- */
+(function(){
+  const h = DATA.head;
+  const tiles = [
+    {v:moneyM(h.total_spend), l:'Total spend analysed'},
+    {v:h.match_rate_pct+'%', l:'Invoice lines auto-matched', c:'good'},
+    {v:moneyM(h.total_at_risk), l:'Flagged at risk (exposure + duplicates)', c:'risk'},
+    {v:h.maverick_pct+'%', l:'Maverick / off-catalog spend', c:'risk'},
+  ];
+  $('kpis').innerHTML = tiles.map(t=>`<div class="kpi ${t.c||''}">
+    <div class="v">${t.v}</div><div class="l">${t.l}</div></div>`).join('');
+})();
+
+/* ---------- Donut: three-way match ---------- */
+(function(){
+  const rows = DATA.match;
+  const colors = {MATCHED:C.green,PRICE_MISMATCH:C.red,NO_RECEIPT:C.amber,QTY_OVERBILL:'#9333EA'};
+  const total = rows.reduce((s,r)=>s+r.lines,0);
+  const cx=110,cy=110,r=78,sw=30; let a=-Math.PI/2; const C2=2*Math.PI*r;
+  let arcs='';
+  rows.forEach(row=>{
+    const frac=row.lines/total, len=frac*C2;
+    arcs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[row.match_status]}"
+      stroke-width="${sw}" stroke-dasharray="${len} ${C2-len}"
+      stroke-dashoffset="${-(a+Math.PI/2)/(2*Math.PI)*C2}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    a+=frac*2*Math.PI;
+  });
+  const center=`<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="30" font-weight="800" fill="${C.navy}">${DATA.head.match_rate_pct}%</text>
+    <text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="11" fill="${C.slate}">clean match</text>`;
+  const leg = rows.map(row=>`<span><i class="dot" style="background:${colors[row.match_status]}"></i>
+     ${row.match_status.replace('_',' ').toLowerCase()} · <b class="hl">${row.lines.toLocaleString()}</b></span>`).join('');
+  $('donut').innerHTML = svg(220,220,arcs+center,'style="max-width:240px;margin:0 auto"')
+    + `<div class="legend">${leg}</div>`;
+})();
+
+/* ---------- Pareto: category spend + cumulative line ---------- */
+(function(){
+  const rows=DATA.category; const W=560,H=240,pl=48,pr=44,pt=16,pb=56;
+  const iw=W-pl-pr, ih=H-pt-pb; const max=Math.max(...rows.map(r=>r.spend));
+  const bw=iw/rows.length*0.62;
+  let bars='',line='',dots='',xl='',pts=[];
+  rows.forEach((r,i)=>{
+    const x=pl+iw/rows.length*i+iw/rows.length*0.19;
+    const bh=r.spend/max*ih, y=pt+ih-bh;
+    bars+=`<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="3" fill="${C.teal}"/>`;
+    bars+=`<text x="${x+bw/2}" y="${y-5}" text-anchor="middle" font-size="9.5" fill="${C.slate}">${moneyM(r.spend)}</text>`;
+    const cy=pt+ih-(r.cum_pct/100*ih);
+    pts.push([x+bw/2,cy]);
+    dots+=`<circle cx="${x+bw/2}" cy="${cy}" r="3.2" fill="${C.amber}"/>`;
+    xl+=`<text x="${x+bw/2}" y="${H-34}" text-anchor="middle" font-size="9" fill="${C.slate}"
+      transform="rotate(18 ${x+bw/2} ${H-34})">${r.category.length>13?r.category.slice(0,12)+'…':r.category}</text>`;
+  });
+  line=`<polyline fill="none" stroke="${C.amber}" stroke-width="2"
+    points="${pts.map(p=>p.join(',')).join(' ')}"/>`;
+  // 80% reference line
+  const y80=pt+ih-(80/100*ih);
+  const ref=`<line x1="${pl}" y1="${y80}" x2="${W-pr}" y2="${y80}" stroke="${C.muted}"
+    stroke-dasharray="4 4" stroke-width="1"/><text x="${W-pr+2}" y="${y80+3}" font-size="9" fill="${C.muted}">80%</text>`;
+  $('pareto').innerHTML=svg(W,H,ref+bars+line+dots+xl)
+    +`<div class="legend"><span><i class="dot" style="background:${C.teal}"></i>spend</span>
+      <span><i class="dot" style="background:${C.amber}"></i>cumulative %</span></div>`;
+})();
+
+/* ---------- Line: monthly trend ---------- */
+(function(){
+  const rows=DATA.spend_trend; const W=560,H=200,pl=52,pr=16,pt=14,pb=34;
+  const iw=W-pl-pr,ih=H-pt-pb; const max=Math.max(...rows.map(r=>r.spend));
+  const x=i=>pl+iw*i/(rows.length-1); const y=v=>pt+ih-v/max*ih;
+  const pts=rows.map((r,i)=>[x(i),y(r.spend)]);
+  const area=`<polygon points="${pl},${pt+ih} ${pts.map(p=>p.join(',')).join(' ')} ${pl+iw},${pt+ih}"
+    fill="${C.teal}" opacity=".10"/>`;
+  const line=`<polyline fill="none" stroke="${C.teal}" stroke-width="2.4"
+    points="${pts.map(p=>p.join(',')).join(' ')}"/>`;
+  let grid='',xl='';
+  for(let g=0;g<=4;g++){const gy=pt+ih*g/4;grid+=`<line x1="${pl}" y1="${gy}" x2="${pl+iw}" y2="${gy}"
+    stroke="${C.border}" stroke-width="1"/><text x="${pl-6}" y="${gy+3}" text-anchor="end"
+    font-size="9" fill="${C.muted}">${moneyM(max*(1-g/4))}</text>`;}
+  rows.forEach((r,i)=>{if(i%4===0)xl+=`<text x="${x(i)}" y="${H-16}" text-anchor="middle"
+    font-size="9" fill="${C.slate}">${r.ym}</text>`;});
+  $('trend').innerHTML=svg(W,H,grid+area+line+xl);
+})();
+
+/* ---------- Maverick stacked bar ---------- */
+(function(){
+  const rows=DATA.maverick; const on=rows.find(r=>r.channel.startsWith('On'));
+  const mav=rows.find(r=>r.channel.startsWith('Mav'));
+  const W=240,H=150;
+  const html=`<div class="statbig"><b>${mav.pct}%</b><span class="s">of spend is off-catalog<br>= ${moneyM(mav.spend)}</span></div>
+  ${svg(W,40,`<rect x="0" y="6" width="${W*on.pct/100}" height="26" rx="4" fill="${C.teal}"/>
+    <rect x="${W*on.pct/100+3}" y="6" width="${W*mav.pct/100-3}" height="26" rx="4" fill="${C.amber}"/>
+    <text x="8" y="23" font-size="11" fill="#fff" font-weight="700">${on.pct}%</text>
+    <text x="${W*on.pct/100+9}" y="23" font-size="11" fill="#fff" font-weight="700">${mav.pct}%</text>`)}
+  <div class="legend"><span><i class="dot" style="background:${C.teal}"></i>on-catalog</span>
+   <span><i class="dot" style="background:${C.amber}"></i>maverick</span></div>`;
+  $('maverick').innerHTML=html;
+})();
+
+/* ---------- P-card dual stat + trend ---------- */
+(function(){
+  const h=DATA.head; const tr=DATA.pcard_trend; const W=240,H=90,pl=4,pr=4,pt=10,pb=18;
+  const iw=W-pl-pr,ih=H-pt-pb; const max=Math.max(...tr.map(r=>r.pct));
+  const x=i=>pl+iw*i/(tr.length-1); const y=v=>pt+ih-v/max*ih;
+  const line=`<polyline fill="none" stroke="${C.teal}" stroke-width="2"
+    points="${tr.map((r,i)=>[x(i),y(r.pct)].join(',')).join(' ')}"/>`;
+  $('pcard').innerHTML=`
+   <div class="statbig"><b>${h.pcard_txn_pct}%</b><span class="s">of transactions…</span></div>
+   <div style="font-size:12.5px;color:var(--slate);margin-bottom:6px">…but only <span class="hl">${h.pcard_pct}%</span> of spend value.
+     Small-dollar, high-volume — that's why per-txn limits matter.</div>
+   <div style="font-size:12px;margin:4px 0"><span class="pill pill-r">${h.pcard_violations} breaches</span>
+     over the $2,500 single-txn limit</div>
+   <div style="font-size:10px;color:var(--muted);margin-top:8px">P-card % of value, by quarter ↓</div>
+   ${svg(W,H,line)}`;
+})();
+
+/* ---------- DPO grouped bars ---------- */
+(function(){
+  const rows=DATA.dpo; const W=560,H=210,pl=40,pr=16,pt=16,pb=40;
+  const iw=W-pl-pr,ih=H-pt-pb; const max=Math.max(...rows.map(r=>Math.max(r.agreed_terms,r.avg_dpo)))*1.1;
+  const grp=iw/rows.length; const bw=grp*0.28;
+  let bars='',xl='';
+  rows.forEach((r,i)=>{
+    const gx=pl+grp*i+grp*0.16;
+    const h1=r.agreed_terms/max*ih, h2=r.avg_dpo/max*ih;
+    bars+=`<rect x="${gx}" y="${pt+ih-h1}" width="${bw}" height="${h1}" rx="3" fill="${C.navy}"/>`;
+    bars+=`<rect x="${gx+bw+6}" y="${pt+ih-h2}" width="${bw}" height="${h2}" rx="3" fill="${r.avg_dpo>r.agreed_terms?C.amber:C.green}"/>`;
+    bars+=`<text x="${gx+bw+6+bw/2}" y="${pt+ih-h2-5}" text-anchor="middle" font-size="9.5" fill="${C.slate}">${r.avg_dpo}d</text>`;
+    xl+=`<text x="${gx+bw}" y="${H-20}" text-anchor="middle" font-size="10" fill="${C.navy}" font-weight="700">NET-${r.agreed_terms}</text>`;
+    xl+=`<text x="${gx+bw}" y="${H-7}" text-anchor="middle" font-size="9" fill="${C.red}">${r.pct_late}% late</text>`;
+  });
+  $('dpo').innerHTML=svg(W,H,bars+xl)
+    +`<div class="legend"><span><i class="dot" style="background:${C.navy}"></i>agreed terms</span>
+      <span><i class="dot" style="background:${C.amber}"></i>actual DPO</span></div>`;
+})();
+
+/* ---------- Top suppliers horizontal bars ---------- */
+(function(){
+  const rows=DATA.top_suppliers.slice(0,8); const W=560,rh=26,pt=6,pl=150;
+  const H=pt*2+rows.length*rh; const max=Math.max(...rows.map(r=>r.spend)); const iw=W-pl-70;
+  let bars='';
+  rows.forEach((r,i)=>{
+    const y=pt+i*rh; const bw=r.spend/max*iw;
+    bars+=`<text x="${pl-8}" y="${y+rh/2+3}" text-anchor="end" font-size="11" fill="${C.navy}">${r.supplier_name.length>20?r.supplier_name.slice(0,19)+'…':r.supplier_name}</text>`;
+    bars+=`<rect x="${pl}" y="${y+4}" width="${bw}" height="${rh-10}" rx="3" fill="${C.teal}"/>`;
+    bars+=`<text x="${pl+bw+6}" y="${y+rh/2+3}" font-size="10" fill="${C.slate}">${moneyM(r.spend)}</text>`;
+  });
+  $('suppliers').innerHTML=svg(W,H,bars);
+})();
+
+/* ---------- Risk flagged ---------- */
+(function(){
+  const h=DATA.head;
+  const items=[
+    {l:'Price-mismatch exposure',v:moneyM(DATA.match.find(r=>r.match_status==='PRICE_MISMATCH').exposure),cls:'pill-r'},
+    {l:'Duplicate invoices ('+h.dup_count+')',v:moneyM(h.dup_at_risk),cls:'pill-r'},
+    {l:'Over-billed qty',v:moneyM(DATA.match.find(r=>r.match_status==='QTY_OVERBILL').exposure),cls:'pill-a'},
+    {l:'No goods receipt ('+DATA.match.find(r=>r.match_status==='NO_RECEIPT').lines+' lines)',v:moneyM(DATA.match.find(r=>r.match_status==='NO_RECEIPT').exposure),cls:'pill-a'},
+  ];
+  $('risk').innerHTML=`<div class="statbig"><b style="color:${C.red}">${moneyM(h.total_at_risk)}</b><span class="s">total flagged<br>for review</span></div>`
+   + items.map(it=>`<div style="display:flex;justify-content:space-between;align-items:center;
+      padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px">
+      <span>${it.l}</span><span class="pill ${it.cls}">${it.v}</span></div>`).join('');
+})();
+</script>
+</body>
+</html>

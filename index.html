@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>P2P Spend Intelligence · Walkthrough</title>
+<style>
+:root{
+  --navy:#0B1F3A;--navy2:#13294B;--teal:#1F8A80;--teal-br:#2DD4BF;--teal-l:#E6F5F4;
+  --amber:#D97706;--amber-l:#FEF3C7;--red:#DC2626;--red-l:#FEE2E2;--green:#16A34A;--green-l:#DCFCE7;
+  --slate:#475569;--muted:#94A3B8;--bg:#F3F6FB;--surface:#FFFFFF;--border:#E2E8F0;--ink:#0F172A;
+  --code-bg:#0E1C33;--code-fg:#D7E3F4;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.65;font-size:15px;padding-bottom:env(safe-area-inset-bottom,0)}
+nav{position:sticky;top:0;z-index:100;background:var(--navy);border-bottom:2px solid var(--teal);
+  padding:0 20px;display:flex;gap:4px;align-items:center;overflow-x:auto;padding-top:env(safe-area-inset-top,0)}
+nav .brand{color:#fff;font-weight:800;font-size:13px;margin-right:14px;white-space:nowrap}
+nav a{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+  padding:14px 11px;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent}
+nav a:hover,nav a.active{color:#fff;border-bottom-color:var(--teal)}
+.wrap{max-width:1000px;margin:0 auto;padding:30px 22px 90px}
+.hero{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:18px;padding:34px 38px;margin-bottom:30px;color:#fff}
+.hero .kick{color:var(--teal-br);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+.hero h1{font-size:28px;font-weight:800;margin:8px 0 10px;line-height:1.2}
+.hero p{color:#CBD5E1;font-size:15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:20px;margin-top:22px}
+.chip b{display:block;font-size:22px;font-weight:800;color:var(--teal-br);letter-spacing:-.5px}
+.chip span{font-size:11.5px;color:var(--muted)}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.badge{font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;border:1px solid rgba(45,212,191,.3);
+  background:rgba(31,138,128,.15);color:var(--teal-br)}
+.sec{margin:46px 0 0}
+.sec-h{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.sec-h .n{background:var(--navy);color:#fff;width:30px;height:30px;border-radius:9px;display:flex;
+  align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
+.sec-h h2{font-size:21px;font-weight:800;color:var(--navy)}
+h3{font-size:16px;font-weight:800;color:var(--navy);margin:22px 0 8px}
+p{margin:10px 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:20px 24px;margin:14px 0;
+  box-shadow:0 1px 2px rgba(11,31,58,.04)}
+.card-navy{background:var(--navy);color:#CBD5E1;border:none}
+.card-navy h3{color:var(--teal-br)}
+pre{background:var(--code-bg);color:var(--code-fg);padding:16px 18px;border-radius:10px;overflow-x:auto;
+  font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;line-height:1.65;margin:12px 0}
+pre .k{color:#7DD3FC}pre .f{color:#FCD34D}pre .s{color:#86EFAC}pre .c{color:#64748B}pre .n{color:#F0ABFC}
+code{background:#E6EDF6;color:#13294B;padding:2px 6px;border-radius:5px;font-size:13px;
+  font-family:'SF Mono',Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-weight:600;font-size:12px}
+td{padding:8px 12px;border-bottom:1px solid var(--border)}
+tr:nth-child(even) td{background:#F8FAFC}
+.tags{color:var(--teal);font-weight:700;font-size:11px;background:var(--teal-l);padding:2px 8px;border-radius:10px}
+.flow{display:flex;flex-wrap:wrap;gap:0;margin:16px 0}
+.fstep{background:var(--surface);border:1.5px solid var(--border);border-radius:11px;padding:13px 14px;
+  flex:1;min-width:130px;position:relative;text-align:center}
+.fstep+.fstep::before{content:'→';position:absolute;left:-15px;top:50%;transform:translateY(-50%);
+  color:var(--teal);font-weight:800;font-size:17px}
+.fstep .t{font-size:10px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.5px}
+.fstep .l{font-size:13px;font-weight:700;color:var(--navy);margin-top:3px}
+.fstep .d{font-size:11px;color:var(--muted);margin-top:3px}
+.insight{background:var(--teal-l);border-left:4px solid var(--teal);border-radius:8px;padding:11px 15px;
+  margin:12px 0;font-size:13.5px}
+.insight b{color:var(--navy)}
+.warn{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:11px 15px;margin:12px 0;font-size:13.5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.q-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.q-head .qn{font-size:12px;font-weight:800;color:#fff;background:var(--teal);padding:2px 9px;border-radius:10px}
+.q-head h3{margin:0}
+ul{margin:10px 0 10px 22px}li{margin:5px 0}
+.foot{margin-top:40px;padding-top:20px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center}
+a.inline{color:var(--teal);font-weight:600;text-decoration:none}a.inline:hover{text-decoration:underline}
+@media(max-width:720px){.grid2{grid-template-columns:1fr}.fstep+.fstep::before{display:none}.hero{padding:24px}}
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">P2P Spend Intelligence</span>
+  <a href="index.html" class="active">Walkthrough</a>
+  <a href="sql-guide.html">SQL Guide</a>
+  <a href="dashboard.html">Dashboard</a>
+</nav>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kick">End-to-end SQL data project · schema → reconciliation → dashboard</div>
+    <h1>Procure-to-Pay Spend Intelligence</h1>
+    <p>A complete, free-stack analytics project that models the full purchasing cycle — order,
+       receive, invoice, pay — then automates the controls a procurement analyst runs by hand:
+       three-way match, maverick-spend detection, supplier scorecards, P-card compliance and
+       duplicate-invoice checks.</p>
+    <div class="chips">
+      <div class="chip"><b>$240M</b><span>indirect spend modelled</span></div>
+      <div class="chip"><b>15,300</b><span>invoice lines</span></div>
+      <div class="chip"><b>76.2%</b><span>auto-matched hands-free</span></div>
+      <div class="chip"><b>~$9.0M</b><span>flagged at risk</span></div>
+    </div>
+    <div class="badges">
+      <span class="badge">PostgreSQL / DuckDB</span><span class="badge">Python · Faker</span>
+      <span class="badge">Window functions · CTEs</span><span class="badge">Chart.js-free SVG</span>
+      <span class="badge">$0.00 cost</span>
+    </div>
+  </div>
+
+  <!-- 1 -->
+  <div class="sec">
+    <div class="sec-h"><div class="n">1</div><h2>Why Procure-to-Pay?</h2></div>
+    <p>One domain sits at the intersection of every profile this project targets. The primitives are
+       identical across all of them — only the labels change.</p>
+    <div class="card">
+      <table>
+        <tr><th>Profile</th><th>Same P2P problem, their words</th></tr>
+        <tr><td><b>United — Global Procurement</b></td><td>Indirect-spend invoice reconciliation, catalog maintenance, supplier onboarding, P-card processing, Coupa/Ariba/SAP</td></tr>
+        <tr><td><b>Blinkit / Zepto (q-commerce)</b></td><td>Vendor PO tracking, GRN confirmation, invoice validation across FMCG suppliers — exactly your day job at Maskyeti</td></tr>
+        <tr><td><b>Amex (commercial card)</b></td><td>Corporate-card / P-card spend analytics, policy-limit controls, duplicate-charge detection, supplier spend intelligence</td></tr>
+      </table>
+    </div>
+    <div class="insight"><b>Takeaway:</b> this is not an airline project or a fintech project — it is a
+      <b>procurement operations</b> project, which is the one thing all three roles actually hire for.</div>
+  </div>
+
+  <!-- 2 -->
+  <div class="sec">
+    <div class="sec-h"><div class="n">2</div><h2>The thought process</h2></div>
+    <p>The design works backwards from the decision. A procurement team needs to answer "which invoices
+       can we safely pay, and where is money leaking?" Everything in the pipeline exists to answer that.</p>
+    <div class="flow">
+      <div class="fstep"><div class="t">Generate</div><div class="l">Synthetic data</div><div class="d">Faker, with defects baked in</div></div>
+      <div class="fstep"><div class="t">Model</div><div class="l">Star schema</div><div class="d">6 dims · 4 facts</div></div>
+      <div class="fstep"><div class="t">Reconcile</div><div class="l">3-way match</div><div class="d">PO ↔ GRN ↔ Invoice</div></div>
+      <div class="fstep"><div class="t">Analyse</div><div class="l">10 questions</div><div class="d">window fns, CTEs</div></div>
+      <div class="fstep"><div class="t">Visualise</div><div class="l">Dashboard</div><div class="d">scorecards</div></div>
+    </div>
+    <div class="warn"><b>Design choice — defects on purpose.</b> Real procurement data is confidential, so the
+      generator <i>engineers</i> known problems at known rates (12% price variance, 8% missing receipts, 2%
+      duplicate invoices, 18% off-catalog…). The SQL then has to <i>find</i> them — which is exactly the job.
+      See <a class="inline" href="https://github.com/">data/data_dictionary.md</a> for the full defect table.</div>
+  </div>
+
+  <!-- 3 -->
+  <div class="sec">
+    <div class="sec-h"><div class="n">3</div><h2>The data model — a star schema</h2></div>
+    <p>Facts are the <i>events</i> of the P2P cycle; dimensions are the <i>context</i> (who, what, when).
+      The grain of every fact table is <b>one document line</b> — because reconciliation happens line by line,
+      not at the invoice header.</p>
+    <div class="card" style="text-align:center">
+      <svg viewBox="0 0 760 360" width="100%" style="max-width:760px" preserveAspectRatio="xMidYMid meet">
+        <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6" fill="#1F8A80"/></marker></defs>
+        <!-- facts center column -->
+        <g font-family="Menlo,monospace" font-size="11">
+        <!-- dims left -->
+        <rect x="20" y="30" width="150" height="44" rx="8" fill="#E6F5F4" stroke="#1F8A80"/>
+        <text x="95" y="50" text-anchor="middle" font-weight="700" fill="#0B1F3A">dim_supplier</text>
+        <text x="95" y="64" text-anchor="middle" fill="#475569" font-size="9">400 rows</text>
+        <rect x="20" y="150" width="150" height="44" rx="8" fill="#E6F5F4" stroke="#1F8A80"/>
+        <text x="95" y="170" text-anchor="middle" font-weight="700" fill="#0B1F3A">dim_item</text>
+        <text x="95" y="184" text-anchor="middle" fill="#475569" font-size="9">800 rows · catalog</text>
+        <rect x="20" y="270" width="150" height="44" rx="8" fill="#E6F5F4" stroke="#1F8A80"/>
+        <text x="95" y="290" text-anchor="middle" font-weight="700" fill="#0B1F3A">dim_cost_center</text>
+        <text x="95" y="304" text-anchor="middle" fill="#475569" font-size="9">40 rows</text>
+        <!-- dims right -->
+        <rect x="590" y="30" width="150" height="44" rx="8" fill="#E6F5F4" stroke="#1F8A80"/>
+        <text x="665" y="50" text-anchor="middle" font-weight="700" fill="#0B1F3A">dim_date</text>
+        <text x="665" y="64" text-anchor="middle" fill="#475569" font-size="9">731 rows</text>
+        <rect x="590" y="150" width="150" height="44" rx="8" fill="#E6F5F4" stroke="#1F8A80"/>
+        <text x="665" y="170" text-anchor="middle" font-weight="700" fill="#0B1F3A">dim_buyer</text>
+        <text x="665" y="184" text-anchor="middle" fill="#475569" font-size="9">25 rows</text>
+        <rect x="590" y="270" width="150" height="44" rx="8" fill="#E6F5F4" stroke="#1F8A80"/>
+        <text x="665" y="290" text-anchor="middle" font-weight="700" fill="#0B1F3A">dim_payment_method</text>
+        <text x="665" y="304" text-anchor="middle" fill="#475569" font-size="9">P-card flag</text>
+        <!-- facts -->
+        <rect x="300" y="24" width="170" height="48" rx="8" fill="#0B1F3A"/>
+        <text x="385" y="44" text-anchor="middle" font-weight="700" fill="#2DD4BF">fact_po_line</text>
+        <text x="385" y="60" text-anchor="middle" fill="#94A3B8" font-size="9">ordered · 15,000</text>
+        <rect x="300" y="110" width="170" height="48" rx="8" fill="#0B1F3A"/>
+        <text x="385" y="130" text-anchor="middle" font-weight="700" fill="#2DD4BF">fact_goods_receipt</text>
+        <text x="385" y="146" text-anchor="middle" fill="#94A3B8" font-size="9">received · 13.8k</text>
+        <rect x="300" y="196" width="170" height="48" rx="8" fill="#0B1F3A"/>
+        <text x="385" y="216" text-anchor="middle" font-weight="700" fill="#2DD4BF">fact_invoice_line</text>
+        <text x="385" y="232" text-anchor="middle" fill="#94A3B8" font-size="9">billed · 15,300</text>
+        <rect x="300" y="282" width="170" height="48" rx="8" fill="#0B1F3A"/>
+        <text x="385" y="302" text-anchor="middle" font-weight="700" fill="#2DD4BF">fact_payment</text>
+        <text x="385" y="318" text-anchor="middle" fill="#94A3B8" font-size="9">paid · 15,300</text>
+        <!-- fact chain -->
+        <line x1="385" y1="72" x2="385" y2="110" stroke="#1F8A80" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="385" y1="158" x2="385" y2="196" stroke="#1F8A80" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="385" y1="244" x2="385" y2="282" stroke="#1F8A80" stroke-width="1.5" marker-end="url(#ar)"/>
+        <!-- dim links (dashed) -->
+        <g stroke="#94A3B8" stroke-width="1" stroke-dasharray="3 3">
+        <line x1="170" y1="52" x2="300" y2="48"/><line x1="170" y1="172" x2="300" y2="210"/>
+        <line x1="170" y1="292" x2="300" y2="220"/>
+        <line x1="590" y1="52" x2="470" y2="48"/><line x1="590" y1="172" x2="470" y2="48"/>
+        <line x1="590" y1="292" x2="470" y2="220"/></g>
+        </g>
+      </svg>
+    </div>
+    <p style="font-size:13px;color:var(--slate)">Dashed lines are dimension joins (surrogate keys);
+      solid arrows are the P2P event chain that the three-way match walks. Full DDL:
+      <code>sql/01_schema.sql</code>.</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="sec">
+    <div class="sec-h"><div class="n">4</div><h2>The crown jewel — the three-way match</h2></div>
+    <p>Procurement's core financial control: <b>never pay an invoice unless it agrees with what we ordered
+      (PO) and what we received (GRN).</b> This whole project exists to express that control as one SQL view
+      and then measure what it catches. A 2% tolerance band ignores rounding noise.</p>
+    <pre><span class="c">-- sql/02_marts.sql  (abridged): PO ↔ GRN ↔ Invoice, line by line</span>
+<span class="k">CREATE VIEW</span> v_three_way_match <span class="k">AS</span>
+<span class="k">WITH</span> gr <span class="k">AS</span> (   <span class="c">-- roll up multiple receipts per PO line</span>
+  <span class="k">SELECT</span> po_number, po_line_num, <span class="f">SUM</span>(quantity_received) <span class="k">AS</span> qty_received
+  <span class="k">FROM</span> fact_goods_receipt <span class="k">GROUP BY</span> po_number, po_line_num)
+<span class="k">SELECT</span> p.po_number, p.po_line_num, i.invoice_number,
+   <span class="f">ROUND</span>((i.unit_price_invoiced - p.unit_price) * i.quantity_invoiced, <span class="n">2</span>) <span class="k">AS</span> price_var_value,
+   (i.quantity_invoiced - <span class="f">COALESCE</span>(gr.qty_received,<span class="n">0</span>))                 <span class="k">AS</span> qty_var,
+   <span class="k">CASE</span>
+     <span class="k">WHEN</span> i.invoice_number <span class="k">IS NULL</span>                    <span class="k">THEN</span> <span class="s">'NO_INVOICE'</span>
+     <span class="k">WHEN</span> gr.qty_received  <span class="k">IS NULL</span>                    <span class="k">THEN</span> <span class="s">'NO_RECEIPT'</span>
+     <span class="k">WHEN</span> i.quantity_invoiced &gt; gr.qty_received       <span class="k">THEN</span> <span class="s">'QTY_OVERBILL'</span>
+     <span class="k">WHEN</span> <span class="f">ABS</span>(i.unit_price_invoiced - p.unit_price)
+                       &gt; p.unit_price * <span class="n">0.02</span>        <span class="k">THEN</span> <span class="s">'PRICE_MISMATCH'</span>
+     <span class="k">ELSE</span> <span class="s">'MATCHED'</span> <span class="k">END</span> <span class="k">AS</span> match_status
+<span class="k">FROM</span> fact_po_line p
+<span class="k">LEFT JOIN</span> gr                ON gr.po_number=p.po_number <span class="k">AND</span> gr.po_line_num=p.po_line_num
+<span class="k">LEFT JOIN</span> fact_invoice_line i ON i.po_number=p.po_number <span class="k">AND</span> i.po_line_num=p.po_line_num;</pre>
+    <div class="grid2">
+      <div>
+        <h3>Result — reconciliation scorecard <span class="tags">Q1</span></h3>
+        <table>
+          <tr><th>Status</th><th>Lines</th><th>% </th><th>$ Exposure</th></tr>
+          <tr><td>✅ MATCHED</td><td>11,657</td><td>76.2%</td><td>$0</td></tr>
+          <tr><td>🔴 PRICE_MISMATCH</td><td>1,590</td><td>10.4%</td><td>$3.62M</td></tr>
+          <tr><td>🟠 NO_RECEIPT</td><td>1,220</td><td>8.0%</td><td>$0.26M</td></tr>
+          <tr><td>🟣 QTY_OVERBILL</td><td>833</td><td>5.4%</td><td>$0.21M</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="insight"><b>What it means:</b> 76% of invoice lines can be auto-approved with zero human
+          review. The remaining 24% carry <b>$4.1M</b> of price/quantity/receipt exposure — that is the queue
+          an analyst works, now ranked by dollar impact instead of hunted for in spreadsheets.</div>
+        <div class="insight"><b>Interview line:</b> "I turned the three-way match from a manual spreadsheet
+          exercise into a single SQL view that clears 76% of lines automatically and dollar-ranks the
+          exceptions."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="sec">
+    <div class="sec-h"><div class="n">5</div><h2>The nine analytical questions</h2></div>
+    <p>Each reads from the marts above. Full SQL with commentary lives in
+      <code>sql/03_analysis.sql</code>; the highlights:</p>
+
+    <div class="card">
+      <div class="q-head"><span class="qn">Q2</span><h3>Where does the money go? (spend Pareto)</h3></div>
+      <pre><span class="k">SELECT</span> category, <span class="f">SUM</span>(line_amount) <span class="k">AS</span> spend,
+   <span class="f">ROUND</span>(<span class="n">100.0</span>*<span class="f">SUM</span>(<span class="f">SUM</span>(line_amount)) <span class="k">OVER</span>(<span class="k">ORDER BY</span> <span class="f">SUM</span>(line_amount) <span class="k">DESC</span>)
+         / <span class="f">SUM</span>(<span class="f">SUM</span>(line_amount)) <span class="k">OVER</span>(), <span class="n">1</span>) <span class="k">AS</span> cumulative_pct   <span class="c">-- running 80/20</span>
+<span class="k">FROM</span> v_spend <span class="k">GROUP BY</span> category <span class="k">ORDER BY</span> spend <span class="k">DESC</span>;</pre>
+      <div class="insight">Top 5 of 7 categories carry <b>75%</b> of spend. A nested window over an aggregate
+        (<code>SUM(SUM(...)) OVER(...)</code>) gives the cumulative share in one pass — the move that signals
+        real SQL fluency. <a class="inline" href="dashboard.html">See the Pareto chart →</a></div>
+    </div>
+
+    <div class="card">
+      <div class="q-head"><span class="qn">Q4</span><h3>Maverick / off-catalog spend</h3></div>
+      <p style="margin:6px 0">Spend that skipped the approved catalog — it almost always costs more and breaks
+        negotiated pricing.</p>
+      <table><tr><th>Channel</th><th>Spend</th><th>%</th></tr>
+        <tr><td>On-catalog</td><td>$188.7M</td><td>78.6%</td></tr>
+        <tr><td>🟠 Maverick (off-catalog)</td><td>$51.3M</td><td>21.4%</td></tr></table>
+      <div class="insight"><b>$51M</b> of spend bypassed the catalog. Even a 5% price premium on that is
+        <b>~$2.5M</b> of recoverable savings — the kind of number that funds a procurement team.</div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="q-head"><span class="qn">Q5</span><h3>Supplier OTIF</h3></div>
+        <p style="margin:6px 0;font-size:13.5px">On-Time <i>and</i> In-Full — the single best reliability metric.
+          Worst performers surface for a quarterly business review.</p>
+        <table><tr><th>Supplier</th><th>OTIF</th></tr>
+          <tr><td>Perez-White</td><td>8.7%</td></tr>
+          <tr><td>Miller, Lucas & Williams</td><td>13.3%</td></tr>
+          <tr><td>Casey, Nguyen & Ramirez</td><td>16.0%</td></tr></table>
+      </div>
+      <div class="card">
+        <div class="q-head"><span class="qn">Q9</span><h3>DPO vs terms</h3></div>
+        <p style="margin:6px 0;font-size:13.5px">Are we honouring payment terms? Date arithmetic vs each
+          supplier's NET terms.</p>
+        <table><tr><th>Terms</th><th>Avg DPO</th><th>% Late</th></tr>
+          <tr><td>NET-30</td><td>36.1 d</td><td>26.7%</td></tr>
+          <tr><td>NET-45</td><td>47.9 d</td><td>24.5%</td></tr>
+          <tr><td>NET-60</td><td>65.7 d</td><td>26.9%</td></tr></table>
+      </div>
+    </div>
+
+    <div class="card card-navy">
+      <div class="q-head"><span class="qn" style="background:var(--amber)">Q6·Q7</span><h3>P-card program — the JD gap, filled</h3></div>
+      <p style="color:#CBD5E1">P-cards are <b style="color:#fff">11.7% of transactions but under 1% of spend value</b>
+        — small-dollar, high-volume. That profile is precisely why they need a hard per-transaction limit.
+        The query flags every breach of the $2,500 ceiling:</p>
+      <pre><span class="k">SELECT</span> supplier_name, invoice_number, total_amount
+<span class="k">FROM</span> v_spend
+<span class="k">WHERE</span> is_pcard <span class="k">AND</span> total_amount &gt; <span class="n">2500</span>      <span class="c">-- policy ceiling</span>
+<span class="k">ORDER BY</span> total_amount <span class="k">DESC</span>;</pre>
+      <p style="color:#CBD5E1">→ <b style="color:#FCA5A5">106 transactions</b> ($281K) over the limit, routed
+        for compliance review. This is the control Amex's commercial side sells and United's JD calls out.</p>
+    </div>
+
+    <div class="card">
+      <div class="q-head"><span class="qn">Q8</span><h3>Duplicate-invoice detection (double-payment control)</h3></div>
+      <pre><span class="k">SELECT</span> supplier_name, total_amount, <span class="f">COUNT</span>(*) <span class="k">AS</span> times_billed,
+   <span class="f">STRING_AGG</span>(invoice_number, <span class="s">', '</span>)          <span class="k">AS</span> invoice_numbers,
+   <span class="f">ROUND</span>(total_amount * (<span class="f">COUNT</span>(*) - <span class="n">1</span>), <span class="n">2</span>) <span class="k">AS</span> amount_at_risk
+<span class="k">FROM</span> v_spend <span class="k">GROUP BY</span> supplier_name, total_amount
+<span class="k">HAVING</span> <span class="f">COUNT</span>(*) &gt; <span class="n">1</span> <span class="k">AND</span> total_amount &gt; <span class="n">500</span>
+<span class="k">ORDER BY</span> amount_at_risk <span class="k">DESC</span>;</pre>
+      <div class="insight">Same supplier + identical amount on 2+ invoices = the classic duplicate-payment
+        signature. Caught <b>288 duplicates</b> worth <b>$4.9M</b> in avoidable double-payments.</div>
+    </div>
+
+    <p style="font-size:13.5px;color:var(--slate)">Also in the file: <b>Q3</b> top-20 suppliers (<code>RANK()</code>),
+      <b>Q10</b> monthly price-variance leakage vs contract (~$5.2M/yr). Every result is reproduced live in the
+      <a class="inline" href="dashboard.html">dashboard</a>.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="sec">
+    <div class="sec-h"><div class="n">6</div><h2>Tech stack &amp; how to run it</h2></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Everything is free / open source</h3>
+        <ul>
+          <li><b>PostgreSQL / DuckDB</b> — warehouse + SQL engine</li>
+          <li><b>Python · Faker · pandas</b> — synthetic data</li>
+          <li><b>SQL</b> — star schema, CTEs, window functions, views</li>
+          <li><b>SVG + vanilla JS</b> — offline dashboard, no CDN</li>
+          <li><i>Optional:</i> <b>dbt-core</b>, <b>Metabase</b> — both free</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Two-minute quickstart</h3>
+        <pre><span class="c"># free deps</span>
+pip install faker pandas duckdb
+
+<span class="c"># generate data + build warehouse + run every analysis</span>
+python scripts/generate_data.py
+python scripts/load_duckdb.py
+
+<span class="c"># open the dashboard</span>
+open docs/index.html</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="sec">
+    <div class="sec-h"><div class="n">7</div><h2>Résumé bullets (this project's real output)</h2></div>
+    <div class="card card-navy">
+      <ol style="margin-left:18px;color:#E2E8F0;line-height:1.7">
+        <li>Built an <b style="color:#fff">end-to-end Procure-to-Pay spend-analytics platform</b> (PostgreSQL/DuckDB · Python · SQL) modelling <b style="color:#2DD4BF">15,000+ PO lines, $240M spend, 400 suppliers</b>, with an automated three-way match that cleared <b style="color:#2DD4BF">76%</b> of invoice lines hands-free and flagged <b style="color:#2DD4BF">$4.1M</b> of price/quantity/receipt exposure.</li>
+        <li>Engineered <b style="color:#fff">10+ analytical SQL models</b> (window functions, CTEs, reconciliation views) surfacing <b style="color:#2DD4BF">21% ($51M) maverick spend</b>, <b style="color:#2DD4BF">288 duplicate invoices ($4.9M at risk)</b> and <b style="color:#2DD4BF">106 P-card policy breaches</b> — ~$9M of addressable leakage and payment risk.</li>
+        <li>Shipped a <b style="color:#fff">self-service spend dashboard</b> (offline SVG, GitHub-Pages deployable) with supplier OTIF scorecards, DPO-vs-terms tracking and a P-card compliance view, replacing ad-hoc spreadsheet reporting with one refreshable source of truth.</li>
+      </ol>
+    </div>
+    <div class="warn"><b>How to present it:</b> label it a personal / portfolio project on a synthetic dataset.
+      The numbers are genuine outputs of your own SQL — you can walk an interviewer through exactly how each one
+      is computed, which is far more convincing than a borrowed Kaggle notebook.</div>
+  </div>
+
+  <div class="foot">
+    Synthetic data only — no confidential information · MIT licensed · built for Purnendu Sarkar's
+    procurement-analyst portfolio<br>
+    <a class="inline" href="sql-guide.html">→ New to SQL? Start with the beginner-to-advanced guide</a>
+  </div>
+</div>
+</body>
+</html>
